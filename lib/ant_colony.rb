@@ -1,90 +1,73 @@
-require 'ant_colony/version'
+require_relative 'ant_colony/version'
 
 module AntColony
   class Colony
+    DEFAULT_PHERO = 0.5
 
-    attr_reader :alpha, :beta, :p, :q, :graph, :population
+    attr_reader :alpha, :beta, :ph, :q, :graph, :pop
 
-    def initialize(options ={})
-      defaults = {
-          alpha: 1,
-          beta: 1,
-          p: 0.3,
-          q: 5,
-          population: 20
-      }
-      defaults.merge(options).each do |k, v|
-        instance_variable_set("@#{k}", v) unless v.nil?
+    def initialize(graph, alpha: 0.8, beta: 0.4, ph: 0.3, q: 500, pop: 200)
+      method(__method__).parameters.each do |_, name|
+        instance_variable_set(:"@#{name}", binding.local_variable_get(name))
       end
+      set_default_tau
     end
 
-    def create_graph(graph)
-      @graph = graph
-    end
+    def find_path(*roadmap)
+      loop do
+        city = graph[roadmap.last] # current point(city) ant located
 
-    def find_way_for(start, roadmap = [start])
-      proposed_ways = {}
-      sum_ways = 0
-
-      begin
-        graph[start].map do |way|
-          sum_ways += (way[:tau] ** alpha).to_f / (way[:length] ** beta) unless roadmap.include? way[:end]
+        sum_paths = city.reduce(0.0) do |sum, (_, path)|
+          sum + (path[:tau]**alpha).to_f / (path[:length]**beta)
         end
 
-        graph[start].map do |way|
-          unless roadmap.include? way[:end]
-            proposed_ways[way[:end]] = (((way[:tau] ** alpha).to_f / way[:length]) ** beta) / sum_ways
+        proposed_paths = city.each_with_object({}) do |(direction, path), paths|
+          unless roadmap.include? direction
+            paths[direction] = (((path[:tau]**alpha).to_f / path[:length])**beta) / sum_paths
           end
         end
 
-        next_start = best_way_of proposed_ways
-        roadmap << next_start unless roadmap.include? next_start
-
-        if roadmap.length < graph.size
-          find_way_for(next_start, roadmap)
-        else
-          return roadmap
-        end
-
-      rescue Exception
-        puts 'The next point is not found, check entered data'
+        roadmap << best_path_of(proposed_paths)
+        break unless roadmap.length < graph.size
       end
+
+      roadmap
     end
 
-    def calculate
+    def solve
       graph.size.times do |i|
-        population.times do
-          roads = find_way_for i+1
-          increase_tau_for roads
+        pop.times do
+          path = find_path(i + 1)
+          increase_tau_for path
         end
       end
     end
 
-    def length_of(way)
-      total_length = 0
-      way.each_with_index do |point, index|
-        next_point = (index +=1)
-        total_length += graph[point].find { |item| item[:end] == way[next_point] }[:length] if next_point <= way.size - 1
+    def length_of(path)
+      [*path, path.first].each_cons(2).reduce(0.0) do |sum, (cur, nxt)|
+        sum + graph[cur][nxt][:length]
       end
-      total_length
     end
 
     private
-    def best_way_of(hash)
-      hash.max_by { |k, v| v }[0]
+
+    def set_default_tau
+      graph.each do |_, roads|
+        roads.each do |_, props|
+          props[:tau] = DEFAULT_PHERO
+        end
+      end
     end
 
-    def increase_tau_for(way)
-      total_length = length_of way
-      delta_tau = q.to_f / total_length
+    def best_path_of(paths)
+      paths.max_by { |_, v| v }.first
+    end
 
-      way.each_with_index do |point, index|
-        next_point = (index +=1)
-        if index < way.size - 1
-          (1-p) * graph[point].find { |item| item[:end] == way[next_point] }[:tau] += delta_tau
-        end
+    def increase_tau_for(path)
+      [*path, path.first].each_cons(2) do |cur, nxt|
+        tau_next = (1.0 - ph) * graph[cur][nxt][:tau] + q.to_f / length_of(path)
+        graph[cur][nxt][:tau] = graph[nxt][cur][:tau] = tau_next
       end
     end
   end
 end
-

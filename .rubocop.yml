@@ -1,0 +1,15 @@
+AllCops:
+  DisplayStyleGuide: true
+  DisplayCopNames: true
+
+Style/Documentation:
+  Enabled: false
+
+Style/GuardClause:
+  Enabled: false
+
+Metrics/LineLength:
+  Max: 110
+
+Metrics/MethodLength:
+  Max: 20
