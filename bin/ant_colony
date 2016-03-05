@@ -1,5 +1,6 @@
-#!/usr/bin/env ruby -wU
+#!/usr/bin/env ruby
 
-require 'ant_colony'
+require_relative '../lib/ant_colony'
+require_relative '../lib/ant_colony/cli.rb'
 
-puts "Hello, world!"
+AntColony::CLI.start(ARGV)

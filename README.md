@@ -25,6 +25,12 @@ colony = AntColony::Colony.new(graph, beta: 0.8, alpha: 0.7, pop: 200, ph: 0.3, 
 colony.solve
 colony.find_path 1 # path from point 1
 ```
+
+Or use cli:
+```bash
+ant_colony solve test_data/test1.yml 1 --pop 200 --alpha 0.7
+```
+
 ## Contributing
 
 1. Fork it ( https://github.com/[my-github-username]/ant_colony/fork )

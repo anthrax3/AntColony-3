@@ -1,7 +1,7 @@
 require 'spec_helper.rb'
 require 'yaml'
 
-describe AntColony do
+describe AntColony::Colony do
   let(:graph)  { YAML.load_file('test_data/test1.yml') }
   let(:colony) { AntColony::Colony.new(graph, pop: 100) }
 
